@@ -1,9 +1,12 @@
 let clickCount = 0;
 
-const countryInput = document.getElementById('country');
+const countrySelect = document.getElementById('countrySelect');
+const countryInput = document.getElementById('countryInput');
 const myForm = document.getElementById('form');
 const modal = document.getElementById('form-feedback-modal');
 const clicksInfo = document.getElementById('click-count');
+const countryList = document.getElementById('countryList');
+const countryCode = document.getElementById('countryCode');
 
 function handleClick() {
     clickCount++;
@@ -29,14 +32,39 @@ function getCountryByIP() {
         .then(response => response.json())
         .then(data => {
             const country = data.country;
-            // TODO inject country to form and call getCountryCode(country) function
+            console.log(country);
+            selectCountry(country)
+            getCountryCode(country)
         })
         .catch(error => {
             console.error('Błąd pobierania danych z serwera GeoJS:', error);
         });
 }
 
+function filterCountries() {
+    const filter = countryInput.value.toLowerCase();
+    const filteredCountries = countries.filter(country => country.toLowerCase().includes(filter));
+
+    countryList.innerHTML = filteredCountries.map(country => 
+        `<li class="list-group-item" onclick="selectCountry('${country}')">${country}</li>`
+    ).join('');
+    countryList.style.visibility = 'visible';
+}
+
+function selectCountry(country) {
+    countryInput.value = country;
+    selectedCountry = country
+    getCountryCode(country)
+    blurFunction()
+}
+
+function blurFunction() {
+    setTimeout(() => countryList.style.visibility = 'hidden', 150);
+}
+
+
 function getCountryCode(countryName) {
+    console.log(countryName);
     const apiUrl = `https://restcountries.com/v3.1/name/${countryName}?fullText=true`;
 
     fetch(apiUrl)
@@ -47,18 +75,37 @@ function getCountryCode(countryName) {
         return response.json();
     })
     .then(data => {        
-        const countryCode = data[0].idd.root + data[0].idd.suffixes.join("")
+        const code = data[0].idd.root + data[0].idd.suffixes.join("")
         // TODO inject countryCode to form
+        countryCode.innerHTML = countryCode.innerHTML + `
+            <option value="${code}">${code} (${ data[0].name.common})</option>
+        `
+        countryCode.value = code
     })
     .catch(error => {
         console.error('Wystąpił błąd:', error);
     });
 }
 
+function onVat() {
+    document.getElementById('vatUE').addEventListener('change', function () {
+        const vatNumField = document.getElementById('vatNumber');
+        const invoiceDataField = document.getElementById('invoiceData');
+        if (this.checked) {
+            vatNumField.parentElement.style.display = 'block';
+          invoiceDataField.parentElement.style.display = 'block';
+        } else {
+            vatNumField.parentElement.style.display = 'none';
+          invoiceDataField.parentElement.style.display = 'none';
+        }
+    });
+}
 
 (() => {
     // nasłuchiwania na zdarzenie kliknięcia myszką
     document.addEventListener('click', handleClick);
 
     fetchAndFillCountries();
+    getCountryByIP();
+    onVat();
 })()
